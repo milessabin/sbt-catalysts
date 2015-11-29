@@ -9,6 +9,12 @@ import com.typesafe.sbt.SbtSite.SiteKeys._
 import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.SbtGit._
 
+import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+import com.typesafe.tools.mima.plugin.MimaKeys
+import MimaKeys.{previousArtifacts, binaryIssueFilters}
+import com.typesafe.tools.mima.core._
+import com.typesafe.tools.mima.core.ProblemFilters._
+
 import com.typesafe.sbt.SbtGhPages.GhPagesKeys._
 import com.typesafe.sbt.SbtGhPages.ghpages
 
@@ -68,23 +74,108 @@ import org.scalajs.sbtplugin.cross.{CrossProject, CrossType}
  * 
  */
 object CatalystsPlugin extends AutoPlugin {
+ 
+  object autoImport extends CatalystsBase 
+  import autoImport._
+
   override def requires = plugins.JvmPlugin
   override def trigger = allRequirements
 
-   object autoImport extends CatalystsBase {
-  }
+  override def globalSettings: Seq[Def.Setting[_]] = Seq(
+    commands ++= Seq(catalystsPrintMarkdown, catalystsShowDependencies, catalystsShowProjectVersions)
+  )
+
+  override def buildSettings: Seq[Setting[_]] =
+    addCommandAlias("gitSnapshots", ";set version in ThisBuild := git.gitDescribedVersion.value.get + \"-SNAPSHOT\"")
 }
 
 /** Contains all methods to simplify a common build file.*/
 trait CatalystsBase {
   type VersionsType = Map[String, String]
   type LibrariesType = Map[String, (String, String, String)]
+  type RepositoriesType = Map[String, (String, String, String)]
   type ScalacPluginType = Map[String, (String, String, String, CrossVersion)]
 
+  def prettyPrintHeader() = {
+
+  }
+
+  def prettyPrintVersions(versions: VersionsType, repo: RepositoriesType): Unit = {
+    versions.toList.sorted.foreach(s => println(s"+ [${s._1}-${s._2}](https://${repo(s._1)._1})"))
+  }
+
+  def catalystsShowDependencies = Command.command("catalystsShowDependencies") { state =>
+    import state._
+
+    val extracted = Project.extract(state)
+    import extracted._
+    
+    val versions = (catalystsDependencies in currentRef get structure.data).get
+    prettyPrintVersions(versions.vers, versions.repos)
+    state
+  }
+
+  def catalystsShowProjectVersions = Command.command("catalystsShowProjectVersions") { state =>
+    import state._
+
+    val extracted = Project.extract(state)
+    import extracted._
+    val prjVersions = (catalystsProjectVersions  in currentRef get structure.data).get
+    val versions = (catalystsDependencies in currentRef get structure.data).get
+
+    prettyPrintVersions(prjVersions, versions.repos)
+   
+    state
+  }
+
+  def catalystsPrintMarkdown = Command.command("catalystsPrintMarkdown") { state =>
+    import state._
+
+    val extracted = Project.extract(state)
+    import extracted._
+    val prjVersions = (catalystsProjectVersions  in currentRef get structure.data).get
+    val versions = (catalystsDependencies in currentRef get structure.data).get
+
+    val info = (catalystsSettings in currentRef get structure.data).get
+
+    
+
+    val repoInfo = versions.repos("sbt-catalysts")
+    val repo = repoInfo._1
+    val proj = info.gh.properName
+    val sbtCatalystsV = repoInfo._2
+
+    val header = s"""
+      |$proj uses [sbt-catalysts][] $sbtCatalystsV to provide a consistent view of
+      |its dependencies on Typelevel projects. As of sbt-catalysts $sbtCatalystsV the
+      |base version profile can be found [here][typelevel-deps]. $proj
+      |uses the following version overrides relative to that,""".stripMargin
+
+    println()
+    println(header)
+    println()
+    prettyPrintVersions(prjVersions, versions.repos)
+    println()
+    println(s"[sbt-catalysts]: https://$repo")
+    println(s"[typelevel-deps]: https://$repo/blob/$sbtCatalystsV/src/main/scala/org/typelevel/TypelevelDeps.scala")
+    println()
+   
+    state
+  }
+
+ lazy val catalystsDependencies  = settingKey[Versions]("The dependencies")
+
+ lazy val catalystsSettings  = settingKey[CatalystsSettings]("The ...")
+
+ lazy val catalystsProjectVersions  = settingKey[VersionsType]("The dependencies")
+
+  case class CatalystsSettings(gh: GitHubSettings, devs: Seq[Dev], versions: Versions)
+ 
   /** Container for the version, library and scala plugin Maps.*/
-  case class Versions(vers: VersionsType, libs: LibrariesType, plugs: ScalacPluginType) {
+  case class Versions(vers: VersionsType, libs: LibrariesType, repos:RepositoriesType, plugs: ScalacPluginType) {
     def vLibs  = (vers, libs)
     def vPlugs = (vers, plugs)
+    def vRepos = (vers, repos)
   }
 
   // Licences
@@ -95,7 +186,7 @@ trait CatalystsBase {
   val mit = ("MIT", url("http://opensource.org/licenses/MIT"))
 
   /** Github settings and related settings usually found in a Github README.*/
-  case class GitHubSettings(org: String, proj: String, publishOrg: String, license: (String, URL)) {
+  case class GitHubSettings(org: String, proj: String, properName: String, publishOrg: String, license: (String, URL)) {
     def home = s"https://github.com/$org/$proj"
     def repo = s"git@github.com:$org/$proj.git"
     def api  = s"https://$org.github.io/$proj/api/"
@@ -228,7 +319,7 @@ trait CatalystsBase {
    *
    * Adds Sonatype release repository and "withCachedResolution" to the update options
    */
-  lazy val sharedCommonSettings = Seq(
+  lazy val sharedCommonSettings: Seq[sbt.Setting[_]] = Seq(
     resolvers ++= Seq(
       Resolver.sonatypeRepo("releases")
     ),
@@ -273,6 +364,22 @@ trait CatalystsBase {
     autoAPIMappings := true,
     pomExtra := <developers> { devs.map(_.pomExtra) } </developers>
   )
+
+  /**
+   * Shared mima settings
+   * 
+   *   import com.typesafe.tools.mima.core.ProblemFilters
+   *   import com.typesafe.tools.mima.core._
+   */
+  def sharedMimaSettings(version: String = "", filters: Seq[ProblemFilter] = Seq()): Seq[Setting[_]] = {
+    val prevArtifacts =  
+      if (version.isEmpty()) 
+        Seq(previousArtifacts := Set())
+      else
+        Seq(previousArtifacts := Set(organization.value %% moduleName.value % version))
+
+    mimaDefaultSettings ++ prevArtifacts ++ Seq(binaryIssueFilters ++= filters)
+  }
 
   /**
    * Release settings common to all projects.
@@ -482,4 +589,17 @@ trait CatalystsBase {
        ),
        git.remoteRepo := gh.repo,
        includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.yml" | "*.md")
+
+
+
+
 }
+/*
+trait CatalystKeys {
+  lazy val catalystsDependencies  = SettingKey[Versions]("dependencies", "The dependencies")
+
+  lazy val catalystsShowDependencies = taskKey[Unit]("Prints the dependencies")
+}
+
+object CatalystKeys extends CatalystKeys
+ */

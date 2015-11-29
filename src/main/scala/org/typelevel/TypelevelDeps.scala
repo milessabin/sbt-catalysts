@@ -8,7 +8,7 @@ import sbtcatalysts.CatalystsPlugin.autoImport._
 object Dependencies {
 
   /**
-   * Versions for libraries and packages
+   * Current versions for libraries and packages
    *
    * Format: Package -> version
    */
@@ -16,23 +16,57 @@ object Dependencies {
     "algebra"        -> "0.3.1",
     "alleycats"      -> "0.1.2",
     "catalysts"      -> "0.1.0",
-    "cats"           -> "0.2.0",
+    "cats"           -> "0.3.0",
     "discipline"     -> "0.4",
     "export-hook"    -> "1.1.0",
-    "kind-projector" -> "0.6.3",
+    "kind-projector" -> "0.7.1",
     "machinist"      -> "0.4.1",
     "macro-compat"   -> "1.1.0",
     "monocle"        -> "1.2.0-M2",
     "paradise"       -> "2.1.0-M5",
     "refined"        -> "0.3.2",
+    "sbt-catalysts"  -> "0.1.6",
     "scalacheck"     -> "1.12.5",
-    "scalatest"      -> "3.0.0-M10",
+    "scalatest"      -> "3.0.0-M11",
     "scalac"         -> "2.11.7",
     "scalac_2.11"    -> "2.11.7",
     "scalac_2.10"    -> "2.10.6",
     "shapeless"      -> "2.2.5",
-    "simulacrum"     -> "0.4.0",
-    "specs2"         -> "3.6.4"
+    "simulacrum"     -> "0.5.0",
+    "specs2"         -> "3.6.5"
+  )
+
+  /**
+   * TEMPORARY: Repos for current libraries and packages
+   *
+   * As is, there is obvious duplication with the version maps. However, this section
+   * will change dramatically once dbuild is implemented as we need to store per verion build
+   * details. Could be that we need one file per repo with all the details. Who knows.
+   * 
+   * Format: Package -> (repo, git branch/hash, version)
+   */
+  val repos = Map[String, (String, String, String)](
+    "algebra"        -> ("github.com/non/algebra"              , "v0.3.1"           , "0.3.1"),
+    "alleycats"      -> ("github.com/non/alleycats"            , "v0.1.2"           , "0.1.2"),
+    "catalysts"      -> ("github.com/InTheNow/catalysts"       , "v0.1.0"           , "0.1.0"),
+    "cats"           -> ("github.com/non/cats"                 , "v0.3.0"           , "0.3.0"),
+    "discipline"     -> ("github.com/typelevel/discipline"     , "v0.4"             , "0.4"),
+    "export-hook"    -> ("github.com/milessabin/export-hook"   , "v1.1.0"           , "1.1.0"),
+    "kind-projector" -> ("github.com/non/kind-projector"       , "v0.7.1"           , "0.7.1"),
+    "machinist"      -> ("github.com/typelevel/machinist"      , "v0.4.1"           , "0.4.1"),
+    "macro-compat"   -> ("github.com/milessabin/macro-compat"  , "v1.1.0"           , "1.1.0"),
+    "monocle"        -> ("github.com/julien-truffaut/Monocle"  , "v1.2.0-M2"        , "1.2.0-M2"),
+    "paradise"       -> ("github.com/scalamacros/paradise"     , "v2.1.0_2.11.7"    , "2.1.0-M5"),
+    "refined"        -> ("github.com/fthomas/refined"          , "v0.3.2"           , "0.3.2"),
+    "sbt-catalysts"  -> ("github.com/InTheNow/sbt-catalysts"   , "0.1.6"            , "0.1.6"),
+    "scalacheck"     -> ("github.com/rickynils/scalacheck"     , "1.12.5"           , "1.12.5"),
+    "scalatest"      -> ("github.com/scalatest/scalatest"      , "3.0.x"            , "3.0.0-M10"),
+    "scalac"         -> ("github.com/scala/scala"              , "v2.11.7"          , "2.11.7"),
+    "scalac_2.11"    -> ("github.com/scala/scala"              , "v2.11.7"          , "2.11.7"),
+    "scalac_2.10"    -> ("github.com/scala/scala"              , "v2.10.6"          , "2.10.6"),
+    "shapeless"      -> ("github.com/milessabin/shapeless"     , "shapeless-2.2.5"  , "2.2.5"),
+    "simulacrum"     -> ("github.com/mpilquist/simulacrum"     , "v0.5.0"           , "0.5.0"),
+    "specs2"         -> ("github.com/etorreborre/specs2"       , "SPECS2-3.6.5"     , "3.6.5")
   )
 
   /**
