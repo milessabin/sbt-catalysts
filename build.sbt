@@ -1,7 +1,7 @@
 sbtPlugin := true
-organization := "com.github.inthenow"
+organization := "org.typelevel"
 name := "sbt-catalysts"
-description := "SBT plugin for catalysts"
+description := "SBT plugin for Catalysts"
 
 libraryDependencies += "org.slf4j" % "slf4j-nop" % "1.7.10"
 

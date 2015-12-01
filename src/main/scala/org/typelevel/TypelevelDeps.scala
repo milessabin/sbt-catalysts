@@ -41,7 +41,9 @@ object Dependencies {
    *
    * As is, there is obvious duplication with the version maps. However, this section
    * will change dramatically once dbuild is implemented as we need to store per verion build
-   * details. Could be that we need one file per repo with all the details. Who knows.
+   * details. Could be that we need one file per repo with all the details, or at least
+   * one map per package. Who knows. Right now, this all for a "frozen" state, should be
+   * per package version.
    * 
    * Format: Package -> (repo, git branch/hash, version)
    */
@@ -136,7 +138,7 @@ object Dependencies {
    * @param v Versions map to use
    * @return All settings required for the macro-compat library
    */
-  def macroCompatSettings(v: Versions): Seq[Setting[_]] =
+  def macroCompatSettings(v: Dependencies): Seq[Setting[_]] =
     addCompileLibs(v, "macro-compat") ++ addCompilerPlugins(v, "paradise") ++
       scalaMacroDependencies(v)
 }
